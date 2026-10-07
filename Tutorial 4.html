@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+
+<title>IT3012 - Tutorial 04: Informed Search</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; color: #333; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%); color: white; padding: 25px; border-radius: 12px; text-align: center; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        
+        .main-layout { display: flex; flex-wrap: wrap; gap: 20px; }
+        .left-panel { flex: 1.2; min-width: 450px; }
+        .right-panel { flex: 1; min-width: 400px; }
+
+        .controls-bar { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid #0d47a1; }
+        .controls-bar select { padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; width: 70%; font-weight: bold; color: #0d47a1; }
+        
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; border-top: 4px solid #0d47a1; }
+        .card h2 { margin-top: 0; color: #0d47a1; font-size: 1.3em; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        
+        /* Shared SVG Styles */
+        .graph-container { text-align: center; background: white; padding: 10px; border-radius: 8px; border: 1px solid #eee; display: flex; align-items: center; justify-content: center; }
+        circle { fill: #fff; stroke: #0d47a1; stroke-width: 2px; transition: all 0.3s; }
+        .active-node { fill: #ffeb3b !important; stroke: #fbc02d !important; stroke-width: 4px !important; }
+        .visited-node { fill: #4caf50 !important; stroke: #2e7d32 !important; fill-opacity: 0.2 !important; }
+        .node-label { font-family: sans-serif; font-size: 15px; font-weight: bold; fill: #0d47a1; pointer-events: none; }
+        .edge-label { fill: #d32f2f; font-size: 15px; font-weight: bold; background: white; }
+        line { stroke: #999; stroke-width: 2px; }
+
+        /* Grid Specifics */
+        .cell { stroke: #ddd; stroke-width: 1px; transition: all 0.2s; }
+        .cell-empty { fill: #fff; }
+        .cell-wall { fill: #555; stroke: #333; }
+        .cell-swamp { fill: #ce93d8; stroke: #ab47bc; }
+        .cell-start { fill: #2196f3; }
+        .cell-goal { fill: #e8491d; }
+        .cell-expanded { fill: #b3e5fc; stroke: #81d4fa; }
+        .cell-path { fill: #ffeb3b; stroke: #fbc02d; stroke-width: 2px; }
+
+        /* Tables & Inputs */
+        .h-table { width: 100%; border-collapse: collapse; margin-top: 15px; text-align: center; }
+        .h-table th, .h-table td { border: 1px solid #ccc; padding: 8px; }
+        .h-table th { background-color: #e3f2fd; color: #0d47a1; }
+        .h-table td { font-weight: bold; color: #333; }
+
+        .tabs { display: flex; margin-bottom: 15px; gap: 5px; }
+        .tab-btn { flex: 1; padding: 12px; background: #ddd; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: #555; font-size: 1em; }
+        .tab-btn.active { background: #0d47a1; color: white; }
+        
+        .fringe-display { background: #e3f2fd; color: #0d47a1; padding: 12px; border-radius: 5px; margin-bottom: 15px; font-size: 0.95em; border-left: 4px solid #2196f3; }
+        .path-display { font-family: monospace; font-size: 1.1em; background: #eee; padding: 10px; border-radius: 5px; margin-bottom: 15px; color: #0d47a1; }
+        
+        .calc-panel { background: #fff9c4; padding: 15px; border-radius: 8px; border: 1px solid #fbc02d; margin-bottom: 15px; }
+        .input-group { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 10px; flex-wrap: wrap; }
+        .input-box { display: flex; flex-direction: column; align-items: center; flex: 1; }
+        .input-box label { font-size: 0.85em; font-weight: bold; color: #555; margin-bottom: 3px; }
+        input[type="text"] { padding: 8px; width: 60px; border: 2px solid #ccc; border-radius: 4px; font-size: 16px; text-align: center; font-weight: bold; text-transform: uppercase; }
+        input[type="number"] { padding: 8px; width: 60px; border: 2px solid #ccc; border-radius: 4px; font-size: 16px; text-align: center; font-weight: bold; }
+        
+        button.action-btn { padding: 12px 20px; background-color: #e8491d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; transition: background 0.2s; }
+        button.action-btn:hover { background-color: #c13812; }
+        
+        .metrics-box { background: #333; color: white; padding: 15px; border-radius: 6px; margin-bottom: 15px; font-family: monospace; font-size: 1.1em; line-height: 1.6; }
+        .metrics-val { color: #4caf50; font-weight: bold; }
+        .metrics-bad { color: #f44336; font-weight: bold; }
+        
+        .feedback { margin-top: 15px; padding: 15px; border-radius: 6px; display: none; line-height: 1.4; }
+        .correct { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
+        .incorrect { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
+        .lesson-box { margin-top: 15px; padding: 15px; background: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 5px; color: #2e7d32; display: none; font-size: 1em; line-height: 1.5; }
+        
+        .hidden { display: none !important; }
+    .student-input { padding: 8px; width: 100%; border: 2px solid #ddd; border-radius: 6px; font-size: 16px; font-weight: bold; text-transform: uppercase; margin-bottom: 15px; box-sizing: border-box;}
+    /* ==========================================================================
+       1. BASE & SLIIT BRANDING VARIABLES
+       ========================================================================== */
+    :root {
+        --ink: #1f2937; 
+        --muted: #4b5563; 
+        --navy: #000066; 
+        --orange: #FF7300; 
+        --sliit-red: #990000;
+        --bg: #eef0f6; 
+        --line: #cbd5e1; 
+        --accent: var(--navy);
+    }
+
+    body { 
+        background: var(--bg); 
+        color: var(--ink); 
+        font: 16px/1.6 "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; 
+        margin: 0; 
+        padding: 20px;
+    }
+
+    .page { 
+        max-width: 1000px; 
+        margin: 0 auto; 
+        background: #fff; 
+        padding: 0 32px 32px; 
+        border-radius: 12px; 
+        box-shadow: 0 6px 18px rgba(0,0,0,.08); 
+        overflow: hidden;
+    }
+
+    h1, h2, h3, h4 { color: var(--navy); margin: 10px 0; }
+    
+    .toolbar { position: sticky; top: 0; background: #fff; padding: 10px 0; text-align: right; z-index: 5; }
+    .btn { background: var(--navy); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 14px; cursor: pointer; font-weight: 600; transition: background 0.2s;}
+    .btn:hover { background: #000044; }
+
+    /* ==========================================================================
+       2. SLIIT LETTERHEAD
+       ========================================================================== */
+    .letterhead { margin: 0 -32px 18px; padding: 22px 32px 0; }
+    .letterhead-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: nowrap; }
+    .brand-block { display: flex; align-items: center; gap: 20px; flex: 1 1 auto; min-width: 0; }
+    .crest { height: 78px; width: auto; flex-shrink: 0; }
+    .title-left { padding-left: 2px; min-width: 0; }
+    .title-left .module-line { color: var(--navy); font-weight: 800; font-size: 1.15rem; }
+    .title-left .program-line { color: var(--navy); font-size: 0.98rem; margin-top: 2px; }
+    .title-left .year-line { color: var(--navy); font-size: 0.9rem; opacity: .85; margin-top: 2px; }
+    .right-block { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; flex-shrink: 0; }
+    .fac-block { text-align: right; }
+    .fac-text { color: var(--navy); font-weight: 800; font-size: 1.05rem; letter-spacing: .2px; }
+    .stripes { display: flex; justify-content: flex-end; gap: 5px; margin-top: 6px; }
+    .stripes span { display: inline-block; width: 14px; height: 20px; background: var(--navy); transform: skew(-18deg); }
+    .stripes span:nth-child(2) { background: var(--orange); }
+    .labsheet-tag { background: var(--navy); color: #fff; border-radius: 999px; padding: 8px 24px; text-align: center; min-width: 150px; }
+    .labsheet-tag .labsheet-num { font-size: 1.4rem; font-weight: 800; line-height: 1.1; }
+    .letterhead-rule { height: 3px; background: var(--navy); margin-top: 16px; border-radius: 2px; }
+
+    /* ==========================================================================
+       3. SIMULATION LAYOUT & GRAPH
+       ========================================================================== */
+    .controls-bar { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #ddd; display: flex; align-items: center; gap: 15px; flex-wrap: wrap;}
+    .controls-bar select { padding: 8px; font-size: 1em; border-radius: 4px; border: 1px solid #ccc; flex-grow: 1; max-width: 400px; }
+    .main-layout { display: flex; gap: 20px; margin-bottom: 40px; flex-wrap: wrap; }
+    .left-panel, .right-panel { flex: 1; min-width: 320px; }
+    .card { border: 1px solid var(--line); border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); background: #fff; height: 100%; box-sizing: border-box;}
+    
+    .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+    .tab-btn { padding: 10px 15px; border: 1px solid #ccc; background: #f1f1f1; color: var(--ink); cursor: pointer; border-radius: 4px; font-weight: bold; transition: 0.2s;}
+    .tab-btn:hover { background: #e2e2e2; }
+    .tab-btn.active { background: var(--navy); color: white; border-color: #000044; }
+
+    .graph-container { background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 10px; display: flex; align-items: center; justify-content: center; height: 320px;}
+    circle { fill: white; stroke: var(--ink); stroke-width: 2; transition: all 0.3s; }
+    text.node-label { font-family: sans-serif; font-size: 14px; font-weight: bold; fill: var(--navy); pointer-events: none; }
+    .edge-label { fill: #d9534f; font-weight: bold; background: white; font-size: 12px;}
+    line, path { stroke: #999; stroke-width: 2; }
+    .visited-node { fill: #d4edda; stroke: #28a745; stroke-width: 3px; }
+    .active-node { fill: #cce5ff; stroke: #004085; transform: scale(1.15); transform-origin: center; }
+
+    .step-container { margin: 15px 0; display: flex; gap: 10px; align-items: center;}
+    #nodeInput { width: 60px; text-align: center; font-size: 1.2em; text-transform: uppercase; padding: 8px; border: 2px solid #ccc; border-radius: 4px; font-weight: bold;}
+    .action-btn { background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;}
+    .action-btn:hover { background: #218838; }
+
+    .path-display { margin-top: 15px; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px; color: var(--navy);}
+    .fringe-display { margin-top: 10px; padding: 15px; background: #e3f2fd; border-radius: 4px; border-left: 4px solid #2196f3; color: #0d47a1; font-family: monospace; font-size: 1.1em;}
+    
+    .feedback { margin-top: 15px; padding: 12px; border-radius: 4px; display: none; }
+    .feedback.correct { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .feedback.incorrect { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .hint-box { display: none; margin-top: 10px; padding: 12px; background: #fff3cd; border: 1px solid #ffeeba; border-radius: 4px; color: #856404; }
+
+    /* ==========================================================================
+       4. SECTION 2: THEORY & MCQs
+       ========================================================================== */
+    .theory-section { margin-top: 40px; border-top: 4px solid var(--navy); padding-top: 30px; }
+    .theory-section p { font-size: 1.05em; color: var(--muted); }
+    .quiz-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; margin-top: 30px; }
+    
+    .quiz-card { background: #fafafa; border: 1px solid var(--line); padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.04); }
+    .quiz-card h4 { margin-top: 0; color: var(--navy); font-size: 1.15em; border-bottom: 2px solid #eee; padding-bottom: 10px;}
+    
+    .quiz-options { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+    .quiz-btn { text-align: left; padding: 12px 15px; border: 1px solid #ccc; background: #fff; color: var(--ink); border-radius: 4px; cursor: pointer; transition: 0.2s; font-size: 1em; line-height: 1.4; font-family: inherit;}
+    .quiz-btn:hover { background: #f1f1f1; border-color: #bbb;}
+    .quiz-btn.correct { background: #d4edda !important; border-color: #28a745 !important; color: #155724 !important; font-weight: bold;}
+    .quiz-btn.wrong { background: #f8d7da !important; border-color: #dc3545 !important; color: #721c24 !important; text-decoration: line-through;}
+    
+    .explanation { font-size: 0.95em; margin-top: 15px; color: var(--ink); display: none; padding: 15px; background: #e9ecef; border-left: 4px solid #007bff; border-radius: 4px; }
+    
+    .written-card { background: #f4f7f6; border: 1px solid var(--line); padding: 25px; border-radius: 8px; grid-column: 1 / -1; }
+    .written-card h4 { color: var(--orange); border-bottom-color: #e8d0c1; }
+    .text-area-container { margin-top: 15px; }
+    textarea { width: 100%; height: 100px; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; font-size: 1em; resize: vertical; box-sizing: border-box;}
+    .reveal-btn { margin-top: 10px; background: #17a2b8; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;}
+    .reveal-btn:hover { background: #138496; }
+    .model-answer { display: none; margin-top: 15px; padding: 15px; background: #e8f4f8; border-left: 4px solid #17a2b8; border-radius: 4px; font-size: 0.95em;}
+
+    @media print { 
+        .toolbar { display: none; } 
+        body { background: #fff; padding: 0; } 
+        .page { box-shadow: none; padding: 0; border-radius: 0; } 
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    
+    <div class="toolbar"><button class="btn" onclick="window.print()">Print / Save as PDF</button></div>
+
+  <header class="letterhead">
+    <div class="letterhead-top">
+      <div class="brand-block">
+              <img class="crest" src="data:image/png;base64,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" alt="SLIIT crest" />
+        <div class="title-left">
+            
+            <div class="program-line">BSc (Hons) in <b>Information Technology Specialized in AI</b></div>
+            <div class="module-line">IT3012 : Intelligent Agents</div>
+            <div class="year-line">Year 3 &middot; Semester 1 &middot; 2026 Semester 2</div>
+        </div>
+      </div>
+      <div class="right-block">
+        <div class="fac-block">
+          <div class="fac-text">Faculty of Computing</div>
+          <div class="stripes"><span></span><span></span><span></span></div>
+        </div>
+        <div class="labsheet-tag">
+            <div class="labsheet-num  ">Tutorial 04</div>
+            <!-- <div class="labsheet-num">01</div> -->
+          </div>
+      </div>
+    </div>
+    <div class="letterhead-rule"></div>
+  </header>
+  <!-- CSS STYLES FOR THE ENTIRE MODULE -->
+  
+
+  <div class="controls-bar">
+    <label><strong>Select Lab Module:</strong></label>
+    <select id="moduleSelect" onchange="loadModule()">
+        <option value="calc">Part 1: Calculation Lab (Greedy vs A*)</option>
+        <option value="grid">Part 2: Terrain Optimization Lab (Swamp Grid)</option>
+        <option value="student">Part 3: Student Work (Treasure Hunt)</option>
+    </select>
+    <button onclick="loadModule()" style="background:#555; color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer; font-weight:bold;">Reset Module</button>
+</div>
+
+<div class="main-layout">
+    
+    <div class="left-panel">
+        
+        <div class="card" id="calcVisuals">
+            <h2>The Map & Edge Costs: g(n)</h2>
+            <div class="graph-container" style="height: 320px;">
+                <svg width="100%" height="320" viewBox="0 0 550 320">
+                    <line x1="50" y1="160" x2="170" y2="60" /> <circle cx="110" cy="110" r="12" fill="white" stroke="#ccc"/><text x="105" y="115" class="edge-label">2</text>
+                    <line x1="170" y1="60" x2="290" y2="60" /> <circle cx="230" cy="60" r="12" fill="white" stroke="#ccc"/><text x="225" y="65" class="edge-label">2</text>
+                    <line x1="290" y1="60" x2="410" y2="60" /> <circle cx="350" cy="60" r="12" fill="white" stroke="#ccc"/><text x="345" y="65" class="edge-label">2</text>
+                    <line x1="410" y1="60" x2="500" y2="160" /> <circle cx="455" cy="110" r="12" fill="white" stroke="#ccc"/><text x="450" y="115" class="edge-label">2</text>
+
+                    <line x1="50" y1="160" x2="230" y2="260" /> <circle cx="140" cy="210" r="12" fill="white" stroke="#ccc"/><text x="135" y="215" class="edge-label">5</text>
+                    <line x1="230" y1="260" x2="350" y2="260" /> <circle cx="290" cy="260" r="12" fill="white" stroke="#ccc"/><text x="285" y="265" class="edge-label">5</text>
+                    <line x1="350" y1="260" x2="500" y2="160" /> <circle cx="425" cy="210" r="12" fill="white" stroke="#ccc"/><text x="420" y="215" class="edge-label">5</text>
+
+                    <circle id="nS" cx="50" cy="160" r="20" style="stroke:#0d47a1; stroke-width:3px;" /> <text x="45" y="165" class="node-label">S</text>
+                    <circle id="nA1" cx="170" cy="60" r="20" /> <text x="160" y="65" class="node-label">A1</text>
+                    <circle id="nA2" cx="290" cy="60" r="20" /> <text x="280" y="65" class="node-label">A2</text>
+                    <circle id="nA3" cx="410" cy="60" r="20" /> <text x="400" y="65" class="node-label">A3</text>
+                    <circle id="nB1" cx="230" cy="260" r="20" /> <text x="220" y="265" class="node-label">B1</text>
+                    <circle id="nB2" cx="350" cy="260" r="20" /> <text x="340" y="265" class="node-label">B2</text>
+                    <circle id="nG" cx="500" cy="160" r="20" style="stroke:#e8491d; stroke-width:3px;" /> <text x="493" y="165" class="node-label">G</text>
+                </svg>
+            </div>
+            
+            <h3 style="margin-top:20px; color:#0d47a1; text-align:center;">Heuristic Table: h(n)</h3>
+            <table class="h-table">
+                <tr><th>Node</th><th>S</th><th>A1</th><th>A2</th><th>A3</th><th>B1</th><th>B2</th><th>G</th></tr>
+                <tr><td><strong>h(n)</strong></td><td>8</td><td>6</td><td>4</td><td>2</td><td>4</td><td>2</td><td>0</td></tr>
+            </table>
+        </div>
+
+        <div class="card hidden" id="gridVisuals">
+            <h2>Grid Pathfinding: "The Swamp Trap"</h2>
+            <div class="graph-container" id="svgGridContainer" style="height: 320px;">
+                </div>
+            <p style="font-size: 0.9em; color: #555; text-align: center; margin-top: 15px; line-height: 1.6;">
+                <span style="display:inline-block; width:12px; height:12px; background:#2196f3;"></span> Start &nbsp;
+                <span style="display:inline-block; width:12px; height:12px; background:#e8491d;"></span> Goal &nbsp;
+                <span style="display:inline-block; width:12px; height:12px; background:#555;"></span> Wall &nbsp;<br>
+                <span style="display:inline-block; width:12px; height:12px; background:#fff; border:1px solid #ccc;"></span> Normal Space <strong>(Cost: 1)</strong> &nbsp;
+                <span style="display:inline-block; width:12px; height:12px; background:#ce93d8;"></span> Swamp/Traffic <strong>(Cost: 5)</strong>
+            </p>
+        </div>
+
+        <!-- MODULE 3 VISUALS -->
+        <div class="card hidden" id="studentVisuals">
+            <h2>The Treasure Map</h2>
+            <div class="graph-container" style="height: 320px;">
+                <svg width="100%" height="320" viewBox="0 0 300 300">
+                    <!-- Grid Edges -->
+                    <line x1="50" y1="50" x2="150" y2="50" stroke="#999" stroke-width="2"/> <text x="100" y="40" font-size="14" font-weight="bold" fill="#e8491d">1</text>
+                    <line x1="150" y1="50" x2="250" y2="50" stroke="#999" stroke-width="2"/> <text x="200" y="40" font-size="14" font-weight="bold" fill="#e8491d">1</text>
+                    <line x1="50" y1="50" x2="50" y2="150" stroke="#999" stroke-width="2"/> <text x="35" y="100" font-size="14" font-weight="bold" fill="#e8491d">1</text>
+                    <line x1="150" y1="50" x2="150" y2="150" stroke="#999" stroke-width="2"/> <text x="135" y="100" font-size="14" font-weight="bold" fill="#e8491d">5</text>
+                    <line x1="250" y1="50" x2="250" y2="150" stroke="#999" stroke-width="2"/> <text x="255" y="100" font-size="14" font-weight="bold" fill="#e8491d">1</text>
+                    <line x1="50" y1="150" x2="150" y2="150" stroke="#999" stroke-width="2"/> <text x="100" y="140" font-size="14" font-weight="bold" fill="#e8491d">5</text>
+                    <line x1="50" y1="150" x2="50" y2="250" stroke="#999" stroke-width="2"/> <text x="35" y="200" font-size="14" font-weight="bold" fill="#e8491d">1</text>
+                    <line x1="250" y1="150" x2="250" y2="250" stroke="#999" stroke-width="2"/> <text x="255" y="200" font-size="14" font-weight="bold" fill="#e8491d">1</text>
+                    <line x1="50" y1="250" x2="150" y2="250" stroke="#999" stroke-width="2"/> <text x="100" y="240" font-size="14" font-weight="bold" fill="#e8491d">1</text>
+                    <line x1="150" y1="250" x2="250" y2="250" stroke="#999" stroke-width="2"/> <text x="200" y="240" font-size="14" font-weight="bold" fill="#e8491d">1</text>
+                    
+                    <!-- Deceptive Diagonal Edge -->
+                    <line x1="150" y1="150" x2="250" y2="250" stroke="#999" stroke-dasharray="5,5" stroke-width="2"/> 
+                    <text x="210" y="190" font-size="14" font-weight="bold" fill="#e8491d">10</text>
+
+                    <!-- Nodes -->
+                    <circle cx="50" cy="50" r="18" fill="white" stroke="#0d47a1" stroke-width="3"/> <text x="44" y="55" font-weight="bold">S</text>
+                    <circle cx="150" cy="50" r="18" fill="white" stroke="#000066" stroke-width="2"/> <text x="144" y="55" font-weight="bold">A</text>
+                    <circle cx="250" cy="50" r="18" fill="white" stroke="#000066" stroke-width="2"/> <text x="244" y="55" font-weight="bold">B</text>
+                    <circle cx="50" cy="150" r="18" fill="white" stroke="#000066" stroke-width="2"/> <text x="44" y="155" font-weight="bold">C</text>
+                    
+                    <!-- Swamp Node -->
+                    <circle cx="150" cy="150" r="18" fill="#ce93d8" stroke="#7b1fa2" stroke-width="3"/> <text x="143" y="155" font-weight="bold">D</text>
+                    
+                    <circle cx="250" cy="150" r="18" fill="white" stroke="#000066" stroke-width="2"/> <text x="245" y="155" font-weight="bold">E</text>
+                    <circle cx="50" cy="250" r="18" fill="white" stroke="#000066" stroke-width="2"/> <text x="45" y="255" font-weight="bold">F</text>
+                    <circle cx="150" cy="250" r="18" fill="white" stroke="#000066" stroke-width="2"/> <text x="143" y="255" font-weight="bold">G</text>
+                    
+                    <!-- Treasure Node -->
+                    <circle cx="250" cy="250" r="18" fill="#ffd54f" stroke="#e8491d" stroke-width="3"/> <text x="245" y="255" font-weight="bold">T</text>
+                </svg>
+            </div>
+            
+            <h3 style="margin-top:20px; color:#0d47a1; text-align:center;">Heuristic Table: h(n)</h3>
+            <table class="h-table">
+                <tr><th>Node</th><th>S</th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th><th>T</th></tr>
+                <tr><td><strong>h(n)</strong></td><td>4</td><td>3</td><td>2</td><td>3</td><td>2</td><td>1</td><td>2</td><td>1</td><td>0</td></tr>
+            </table>
+        </div>
+
+    </div>
+
+    <div class="right-panel">
+        
+        <div id="calcControls">
+            <div class="tabs">
+                <button class="tab-btn active" id="tabGreedy" onclick="switchCalcAlgo('GREEDY')">1. Greedy Best-First</button>
+                <button class="tab-btn" id="tabAstar" onclick="switchCalcAlgo('ASTAR')">2. A* Search</button>
+            </div>
+
+            <div class="card">
+                <h2 id="algoTitle">Greedy Best-First Search</h2>
+                <p id="algoFormula" style="font-family:monospace; font-weight:bold; background:#eee; padding:5px; text-align:center;">Formula: f(n) = h(n)</p>
+                
+                <div class="path-display">Path: <span id="visitedPath"></span></div>
+                
+                <div class="fringe-display">
+                    <strong>Unexpanded Nodes (Frontier):</strong><br>
+                    <span id="currentFringe" style="font-family:monospace; font-size:1.1em; font-weight:bold;">[ S ]</span>
+                </div>
+
+                <div class="calc-panel">
+                    <p style="margin-top:0; font-weight:bold; color:#f57f17; text-align:center;">Calculate the Next Expansion</p>
+                    <div class="input-group">
+                        <div class="input-box">
+                            <label>Node Name</label>
+                            <input type="text" id="inpNode" maxlength="2" placeholder="e.g. A1">
+                        </div>
+                        <div class="input-box" id="boxG" style="display:none;">
+                            <label>g(n) Cost</label>
+                            <input type="number" id="inpG" placeholder="0">
+                        </div>
+                        <div class="input-box">
+                            <label>h(n) Heuristic</label>
+                            <input type="number" id="inpH" placeholder="0">
+                        </div>
+                        <div class="input-box" id="boxF" style="display:none;">
+                            <label>f(n) Total</label>
+                            <input type="number" id="inpF" placeholder="0">
+                        </div>
+                    </div>
+                    <button class="action-btn" onclick="checkCalculation()">Evaluate & Expand</button>
+                </div>
+                
+                <div id="calcFeedback" class="feedback"></div>
+                <div id="calcLesson" class="lesson-box"></div>
+            </div>
+        </div>
+
+        <div class="card hidden" id="gridControls">
+            <h2>Algorithm Controls</h2>
+            <p style="font-size:0.95em; color:#555;">Choose a heuristic and watch how it handles the high-cost Swamp terrain.</p>
+            
+            <label><strong>Select Heuristic h(n):</strong></label>
+            <select id="heuristicSelect" style="width:100%; margin-bottom:15px; margin-top:5px; padding: 10px; font-size: 16px;">
+                <option value="zero">1. h(n) = 0 (Uniform Cost / Blind)</option>
+                <option value="manhattan" selected>2. h(n) = Manhattan (Admissible)</option>
+                <option value="overestimate">3. h(n) = Manhattan × 10 (Inadmissible)</option>
+            </select>
+
+            <button class="action-btn" onclick="runGridSearch()">Run Grid Search</button>
+
+            <div class="metrics-box" style="margin-top:20px;">
+                Nodes Expanded (Time): <span id="nodesExpanded">0</span><br>
+                Total Path Cost: <span id="pathCost">0</span><br>
+                Is Path Optimal?: <span id="isOptimal">-</span>
+            </div>
+
+            <div id="gridLesson" class="lesson-box" style="background:#e3f2fd; color:#0277bd; border-color:#b3e5fc;"></div>
+        </div>
+
+        <div class="card hidden" id="studentControls">
+            <h2>Treasure Hunt Worksheet</h2>
+            <p style="font-size:0.95em; color:#555;">Analyze the map and calculate the final path to the Treasure (T) chosen by each algorithm. Assume ties are broken alphabetically.</p>
+            
+            <label><strong>1. BFS Path (Shortest Hops)</strong><br><small>Format: S-X-Y-T</small></label>
+            <input type="text" id="stuBfs" class="student-input" placeholder="S-...">
+
+            <label><strong>2. DFS Path (Deepest First)</strong><br><small>Format: S-X-Y-T</small></label>
+            <input type="text" id="stuDfs" class="student-input" placeholder="S-...">
+
+            <label><strong>3. A* Search Path (Optimal)</strong><br><small>Format: S-X-Y-T</small></label>
+            <input type="text" id="stuAstar" class="student-input" placeholder="S-...">
+
+            <label><strong>4. Total Cost of A* Path</strong></label>
+            <input type="number" id="stuCost" class="student-input" placeholder="0" style="width:100px;">
+
+            <button class="action-btn" onclick="checkStudentWork()" style="width:100%; margin-top:10px;">Verify Answers</button>
+
+            <div id="studentFeedback" class="feedback"></div>
+        </div>
+        
+
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // MODULE SWITCHING LOGIC
+    // ==========================================
+    function loadModule() {
+        const mod = document.getElementById('moduleSelect').value;
+        const els = ['calc', 'grid', 'student'];
+        
+        els.forEach(e => {
+            const vis = document.getElementById(e + 'Visuals');
+            const ctrl = document.getElementById(e + 'Controls');
+            if (vis && ctrl) {
+                if (mod === e) {
+                    vis.classList.remove('hidden');
+                    ctrl.classList.remove('hidden');
+                } else {
+                    vis.classList.add('hidden');
+                    ctrl.classList.add('hidden');
+                }
+            }
+        });
+
+        if (mod === 'calc') switchCalcAlgo('GREEDY');
+        if (mod === 'grid') initGrid();
+        if (mod === 'student') {
+            document.getElementById('studentFeedback').style.display = 'none';
+        }
+    }
+
+    // ==========================================
+    // MODULE 1: CALCULATION LAB (GREEDY VS A*)
+    // ==========================================
+    const algoData = {
+        'GREEDY': {
+            title: 'Greedy Best-First Search',
+            formula: 'Formula: f(n) = h(n)',
+            steps: [
+                { node: 'S', h: 8, fringe: '[ A1, B1 ]', hint: "Start by expanding S." },
+                { node: 'B1', h: 4, fringe: '[ A1, B2 ]', hint: "Compare h(A1)=6 and h(B1)=4. Greedy picks the lowest h(n)." },
+                { node: 'B2', h: 2, fringe: '[ A1, G ]', hint: "From B1, you can only reach B2. h(B2)=2." },
+                { node: 'G', h: 0, fringe: 'Goal Reached!', hint: "Goal found!" }
+            ],
+            lesson: "<strong>Greedy fell for the Trap! (Path Cost: 15)</strong><br>Because it only looked at the heuristic <strong>h(n)</strong>, it chose B1 (h=4) over A1 (h=6). It completely ignored the massive edge costs of 5 on the bottom route!"
+        },
+        'ASTAR': {
+            title: 'A* Search',
+            formula: 'Formula: f(n) = g(n) + h(n)',
+            steps: [
+                { node: 'S', g: 0, h: 8, f: 8, fringe: '[ A1, B1 ]', hint: "Start at S. Cost so far is 0." },
+                { node: 'A1', g: 2, h: 6, f: 8, fringe: '[ A2, B1 ]', hint: "Calculate f(n) for Frontier: f(A1) = 2+6=8. f(B1) = 5+4=9. Expand the lowest." },
+                { node: 'A2', g: 4, h: 4, f: 8, fringe: '[ A3, B1 ]', hint: "Cumulative cost to A2 is g(A1)+2 = 4. f(A2) = 4+4=8. Still lower than B1(9)!" },
+                { node: 'A3', g: 6, h: 2, f: 8, fringe: '[ G, B1 ]', hint: "Cumulative cost to A3 is g(A2)+2 = 6. f(A3) = 6+2=8." },
+                { node: 'G', g: 8, h: 0, f: 8, fringe: 'Goal Reached!', hint: "Cumulative cost to G is 8. f(G) = 8+0=8." }
+            ],
+            lesson: "<strong>A* found the Optimal Path! (Cost: 8)</strong><br>Even though B1 looked closer (h=4), A* calculated the true past cost <strong>g(n)=5</strong>. The total f-score for B1 was 9, while the A-route maintained a perfect f-score of 8. A* safely navigated the backroads!"
+        }
+    };
+
+    let currentCalcAlgo = 'GREEDY';
+    let calcStepIdx = 0;
+
+    function switchCalcAlgo(algo) {
+        currentCalcAlgo = algo;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(algo === 'GREEDY' ? 'tabGreedy' : 'tabAstar').classList.add('active');
+        
+        document.getElementById('algoTitle').textContent = algoData[algo].title;
+        document.getElementById('algoFormula').textContent = algoData[algo].formula;
+        
+        document.getElementById('boxG').style.display = (algo === 'ASTAR') ? 'flex' : 'none';
+        document.getElementById('boxF').style.display = (algo === 'ASTAR') ? 'flex' : 'none';
+        
+        resetCalcAlgo();
+    }
+
+    function resetCalcAlgo() {
+        calcStepIdx = 0;
+        document.getElementById('visitedPath').textContent = "None";
+        document.getElementById('currentFringe').textContent = "[ S ]";
+        
+        document.getElementById('inpNode').value = "";
+        document.getElementById('inpG').value = "";
+        document.getElementById('inpH').value = "";
+        document.getElementById('inpF').value = "";
+        document.getElementById('inpNode').disabled = false;
+        
+        document.getElementById('calcFeedback').style.display = 'none';
+        document.getElementById('calcLesson').style.display = 'none';
+        
+        document.querySelectorAll('#calcVisuals circle').forEach(c => {
+            c.classList.remove('visited-node', 'active-node');
+        });
+    }
+
+    function checkCalculation() {
+        const uNode = document.getElementById('inpNode').value.toUpperCase().trim();
+        const uH = parseInt(document.getElementById('inpH').value);
+        const fb = document.getElementById('calcFeedback');
+        const expected = algoData[currentCalcAlgo].steps[calcStepIdx];
+
+        if (uNode !== expected.node) {
+            fb.className = "feedback incorrect";
+            fb.innerHTML = `<strong>Incorrect Node Selection.</strong><br>You selected '${uNode}'. Look at the nodes currently in the Frontier. Which one has the lowest evaluation score?<br><small>Hint: ${expected.hint}</small>`;
+            fb.style.display = 'block'; return;
+        }
+
+        if (uH !== expected.h) {
+            fb.className = "feedback incorrect";
+            fb.innerHTML = `<strong>Incorrect Heuristic h(n).</strong><br>Look at the table. What is the value for ${uNode}?`;
+            fb.style.display = 'block'; return;
+        }
+
+        if (currentCalcAlgo === 'ASTAR') {
+            const uG = parseInt(document.getElementById('inpG').value);
+            const uF = parseInt(document.getElementById('inpF').value);
+
+            if (uG !== expected.g) {
+                fb.className = "feedback incorrect";
+                fb.innerHTML = `<strong>Incorrect Path Cost g(n).</strong><br>Remember, g(n) is the <em>cumulative</em> cost from S to ${uNode}.`;
+                fb.style.display = 'block'; return;
+            }
+            if (uF !== expected.f) {
+                fb.className = "feedback incorrect";
+                fb.innerHTML = `<strong>Incorrect Total f(n).</strong><br>Check your math! f(n) = g(n) + h(n).`;
+                fb.style.display = 'block'; return;
+            }
+        }
+
+        // Success Update
+        const nodeEl = document.getElementById('n' + uNode);
+        if(nodeEl) {
+            nodeEl.classList.add('visited-node', 'active-node');
+            setTimeout(() => nodeEl.classList.remove('active-node'), 500);
+        }
+
+        const currentPath = document.getElementById('visitedPath').textContent;
+        document.getElementById('visitedPath').textContent = (currentPath === "None" ? "" : currentPath + " → ") + uNode;
+        document.getElementById('currentFringe').textContent = expected.fringe;
+        
+        document.getElementById('inpNode').value = "";
+        document.getElementById('inpG').value = "";
+        document.getElementById('inpH').value = "";
+        document.getElementById('inpF').value = "";
+        
+        calcStepIdx++;
+
+        fb.className = "feedback correct";
+        if (currentCalcAlgo === 'ASTAR') fb.innerHTML = `<strong>Correct!</strong> Expanded ${uNode}.<br>f(${uNode}) = ${expected.g} + ${expected.h} = ${expected.f}.`;
+        else fb.innerHTML = `<strong>Correct!</strong> Expanded ${uNode}.<br>h(${uNode}) = ${expected.h}.`;
+        
+        fb.style.display = 'block';
+        document.getElementById('inpNode').focus();
+
+        if (calcStepIdx >= algoData[currentCalcAlgo].steps.length) {
+            fb.innerHTML += `<br><strong>🏆 SEARCH COMPLETE!</strong>`;
+            document.getElementById('inpNode').disabled = true;
+            document.getElementById('calcLesson').innerHTML = algoData[currentCalcAlgo].lesson;
+            document.getElementById('calcLesson').style.display = 'block';
+        }
+    }
+
+    // ==========================================
+    // MODULE 2: GRID TERRAIN LAB (SWAMP)
+    // ==========================================
+    const cols = 15, rows = 10, size = 30;
+    const startNode = {x: 2, y: 5}, goalNode = {x: 12, y: 5};
+    const walls = [{x: 7, y: 0}, {x: 7, y: 1}, {x: 7, y: 2}];
+    const swamps = [];
+    for(let x=4; x<=10; x++) { for(let y=4; y<=6; y++) swamps.push({x, y}); }
+
+    function initGrid() {
+        const container = document.getElementById('svgGridContainer');
+        let svg = `<svg width="${cols*size}" height="${rows*size}" viewBox="0 0 ${cols*size} ${rows*size}">`;
+        
+        for(let y=0; y<rows; y++) {
+            for(let x=0; x<cols; x++) {
+                let type = 'cell-empty';
+                if (x===startNode.x && y===startNode.y) type = 'cell-start';
+                else if (x===goalNode.x && y===goalNode.y) type = 'cell-goal';
+                else if (walls.some(w => w.x===x && w.y===y)) type = 'cell-wall';
+                else if (swamps.some(s => s.x===x && s.y===y)) type = 'cell-swamp';
+                
+                svg += `<rect id="c_${x}_${y}" class="cell ${type}" x="${x*size}" y="${y*size}" width="${size}" height="${size}" />`;
+            }
+        }
+        svg += `</svg>`;
+        container.innerHTML = svg;
+        
+        document.getElementById('nodesExpanded').innerText = "0";
+        document.getElementById('pathCost').innerText = "0";
+        document.getElementById('isOptimal').innerText = "-";
+        document.getElementById('gridLesson').style.display = 'none';
+    }
+
+    function getH(x, y, type) {
+        const dx = Math.abs(x - goalNode.x), dy = Math.abs(y - goalNode.y);
+        if (type === 'zero') return 0; 
+        if (type === 'manhattan') return dx + dy; 
+        if (type === 'overestimate') return (dx + dy) * 10; 
+        return 0;
+    }
+
+    function runGridSearch() {
+        initGrid(); 
+        const hType = document.getElementById('heuristicSelect').value;
+        let openList = [{x: startNode.x, y: startNode.y, g: 0, f: getH(startNode.x, startNode.y, hType), parent: null}];
+        let closedList = new Set();
+        let expandedCount = 0;
+        let finalNode = null;
+
+        while(openList.length > 0) {
+            openList.sort((a,b) => a.f - b.f);
+            let current = openList.shift();
+            let key = `${current.x},${current.y}`;
+
+            if(closedList.has(key)) continue;
+            closedList.add(key);
+            expandedCount++;
+
+            if((current.x!==startNode.x || current.y!==startNode.y) && (current.x!==goalNode.x || current.y!==goalNode.y)) {
+                document.getElementById(`c_${current.x}_${current.y}`).classList.add('cell-expanded');
+            }
+
+            if(current.x===goalNode.x && current.y===goalNode.y) { finalNode = current; break; }
+
+            const dirs = [{x:0,y:-1}, {x:1,y:0}, {x:0,y:1}, {x:-1,y:0}];
+            for(let d of dirs) {
+                let nx = current.x + d.x, ny = current.y + d.y;
+                let nKey = `${nx},${ny}`;
+                
+                if(nx<0 || nx>=cols || ny<0 || ny>=rows) continue;
+                if(walls.some(w => w.x===nx && w.y===ny)) continue;
+                if(closedList.has(nKey)) continue;
+
+                let stepCost = swamps.some(s => s.x===nx && s.y===ny) ? 5 : 1;
+                let g = current.g + stepCost;
+                let f = g + getH(nx, ny, hType);
+                openList.push({x: nx, y: ny, g: g, f: f, parent: current});
+            }
+        }
+
+        let pathCost = 0;
+        if(finalNode) {
+            let curr = finalNode;
+            while(curr.parent !== null) {
+                if (curr.x !== goalNode.x || curr.y !== goalNode.y) {
+                    document.getElementById(`c_${curr.x}_${curr.y}`).classList.add('cell-path');
+                }
+                pathCost += swamps.some(s => s.x===curr.x && s.y===curr.y) ? 5 : 1;
+                curr = curr.parent;
+            }
+        }
+
+        document.getElementById('nodesExpanded').innerText = expandedCount;
+        document.getElementById('pathCost').innerText = pathCost;
+        
+        let isOpt = (pathCost === 16) ? "<span class='metrics-val'>YES (Cost 16)</span>" : `<span class='metrics-bad'>NO (Cost ${pathCost})</span>`;
+        document.getElementById('isOptimal').innerHTML = isOpt;
+
+        const lessonBox = document.getElementById('gridLesson');
+        if(hType === 'zero') lessonBox.innerHTML = "<strong>Blind Search (h=0):</strong> Found optimal path (avoided swamp), but expanded too many nodes (Slow!).";
+        else if(hType === 'manhattan') lessonBox.innerHTML = "<strong>Admissible (Manhattan):</strong> 🏆 Perfect! Saw the swamp cost (g=5) and smartly routed around it. Optimal path with minimal effort.";
+        else if(hType === 'overestimate') lessonBox.innerHTML = "<strong>Inadmissible (Manhattan × 10):</strong> 🚨 The Trap! The heuristic 'pull' was so strong it ignored the heavy swamp cost. It plowed through the mud (Cost: 39). Sacrificed the shortest path!";
+        lessonBox.style.display = 'block';
+    }
+
+    ///==========================================
+    // MODULE 3: STUDENT WORK (TREASURE HUNT)
+    // ==========================================
+    function checkStudentWork() {
+        const bfs = document.getElementById('stuBfs').value.replace(/\s+/g, '').toUpperCase();
+        const dfs = document.getElementById('stuDfs').value.replace(/\s+/g, '').toUpperCase();
+        const ast = document.getElementById('stuAstar').value.replace(/\s+/g, '').toUpperCase();
+        const cost = document.getElementById('stuCost').value.trim();
+        const fb = document.getElementById('studentFeedback');
+
+        let errors = [];
+
+        if (bfs !== "S-A-D-T") {
+            errors.push("<strong>BFS Path:</strong> Incorrect. Remember BFS counts the <em>fewest edges</em>, completely ignoring edge costs. Look for the path with the fewest hops to T.");
+        }
+        if (dfs !== "S-A-B-E-T") {
+            errors.push("<strong>DFS Path:</strong> Incorrect. DFS dives deep. Break ties alphabetically (A before C). S -> A -> B... where next?");
+        }
+        if (ast !== "S-A-B-E-T" && ast !== "S-C-F-G-T") {
+            errors.push("<strong>A* Path:</strong> Incorrect. A* calculates f(n) = g(n) + h(n). It will avoid the Swamp (D) because the g-cost is too high.");
+        }
+        if (cost !== "4") {
+            errors.push("<strong>A* Cost:</strong> Incorrect. Add up the exact edge costs along the optimal path found by A*.");
+        }
+
+        if (errors.length === 0) {
+            fb.className = "feedback correct";
+            fb.innerHTML = `<strong>🏆 All Answers Correct!</strong><br>
+            <ul>
+                <li><strong>BFS</strong> fell into the Swamp trap because it blindly searches for fewest hops (3 edges).</li>
+                <li><strong>DFS</strong> luckily found an optimal path due to alphabetical tie-breaking, but it's not guaranteed.</li>
+                <li><strong>A*</strong> perfectly calculated the true costs and bypassed the high-cost Swamp.</li>
+            </ul>`;
+        } else {
+            fb.className = "feedback incorrect";
+            fb.innerHTML = "<strong>Please review your answers:</strong><br>" + errors.join("<br><br>");
+        }
+        fb.style.display = 'block';
+    }
+    // Init App
+    loadModule();
+</script>
+
+</body>
+
+</html>

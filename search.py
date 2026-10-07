@@ -147,6 +147,9 @@ def uniformCostSearch(problem: SearchProblem):
     fringe.push(startNode, startCost)
     bestCost = {startState: startCost}
 
+    while not fringe.isEmpty():
+        state, actions, cost = fringe.pop()
+
     return []
 
 def nullHeuristic(state, problem=None):

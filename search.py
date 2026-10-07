@@ -139,7 +139,12 @@ def uniformCostSearch(problem: SearchProblem):
     """Search the node of least total cost first."""
     fringe = util.PriorityQueue()
     startState = problem.getStartState()
-    fringe.push((startState, [], 0), 0)
+
+    startActions = []
+    startCost = 0
+    startNode = (startState, startActions, startCost)
+
+    fringe.push(startNode, startCost)
 
     return []
 

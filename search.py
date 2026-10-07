@@ -150,6 +150,15 @@ def uniformCostSearch(problem: SearchProblem):
     while not fringe.isEmpty():
         state, actions, cost = fringe.pop()
 
+        for successor, action, stepCost in problem.getSuccessors(state):
+            newCost = cost + stepCost
+            newActions = actions + [action]
+
+            if successor not in bestCost:
+                bestCost[successor] = newCost
+                successorNode = (successor, newActions, newCost)
+                fringe.push(successorNode, newCost)
+
     return []
 
 def nullHeuristic(state, problem=None):

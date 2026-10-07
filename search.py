@@ -145,6 +145,7 @@ def uniformCostSearch(problem: SearchProblem):
     startNode = (startState, startActions, startCost)
 
     fringe.push(startNode, startCost)
+    bestCost = {startState: startCost}
 
     return []
 

@@ -35,6 +35,7 @@ Good luck and happy searching!
 """
 
 from typing import List, Tuple, Any
+import itertools
 from game import Directions
 from game import Agent
 from game import Actions
@@ -376,7 +377,23 @@ def cornersHeuristic(state: Any, problem: CornersProblem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
-    return 0 # Default to trivial solution
+    position, visitedCorners = state
+    remainingCorners = [
+        corner for corner in corners if corner not in visitedCorners
+    ]
+
+    if not remainingCorners:
+        return 0
+
+    # Find the cheapest relaxed Manhattan route through every remaining corner.
+    bestRouteCost = float("inf")
+    for order in itertools.permutations(remainingCorners):
+        routeCost = util.manhattanDistance(position, order[0])
+        for index in range(len(order) - 1):
+            routeCost += util.manhattanDistance(order[index], order[index + 1])
+        bestRouteCost = min(bestRouteCost, routeCost)
+
+    return bestRouteCost
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"

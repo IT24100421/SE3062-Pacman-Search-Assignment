@@ -35,6 +35,7 @@ Good luck and happy searching!
 """
 
 from typing import List, Tuple, Any
+import itertools
 from game import Directions
 from game import Agent
 from game import Actions
@@ -388,6 +389,13 @@ def cornersHeuristic(state: Any, problem: CornersProblem):
     distances = [
         util.manhattanDistance(position, corner) for corner in remainingCorners
     ]
+
+    bestRouteCost = float("inf")
+    for order in itertools.permutations(remainingCorners):
+        routeCost = util.manhattanDistance(position, order[0])
+        for index in range(len(order) - 1):
+            routeCost += util.manhattanDistance(order[index], order[index + 1])
+        bestRouteCost = min(bestRouteCost, routeCost)
 
     return max(distances)
 

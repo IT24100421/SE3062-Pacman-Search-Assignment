@@ -384,6 +384,11 @@ def cornersHeuristic(state: Any, problem: CornersProblem):
     if not remainingCorners:
         return 0
 
+    # Manhattan distance ignores walls, so it lower-bounds the maze distance.
+    distances = [
+        util.manhattanDistance(position, corner) for corner in remainingCorners
+    ]
+
     return 0 # Default to trivial solution
 
 class AStarCornersAgent(SearchAgent):

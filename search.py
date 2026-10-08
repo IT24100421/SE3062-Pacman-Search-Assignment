@@ -153,6 +153,9 @@ def uniformCostSearch(problem: SearchProblem):
         if cost != bestCost.get(state):
             continue
 
+        if problem.isGoalState(state):
+            return actions
+
         for successor, action, stepCost in problem.getSuccessors(state):
             newCost = cost + stepCost
             newActions = actions + [action]

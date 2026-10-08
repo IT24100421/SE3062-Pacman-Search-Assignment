@@ -68,17 +68,82 @@ Student 3 report evidence should include:
 
 # Student 3 — Q6 Corners Heuristic
 
-## Q5 Dependency / State Contract
+## Responsibility
 
-The current `CornersProblem` implementation uses the state:
+Student 3 implemented `cornersHeuristic(state, problem)` in `searchAgents.py`.
+
+## Q5 State Used
+
+The heuristic uses the confirmed Q5 state:
 
 `(position, visitedCorners)`
 
-- `position` is the current Pac-Man coordinate as an `(x, y)` tuple.
-- `visitedCorners` is a `frozenset` containing the corner-coordinate tuples already visited.
+- `position` is the current Pac-Man coordinate.
+- `visitedCorners` is a `frozenset` of visited corner coordinates.
 
-`getStartState()` creates this format and includes the starting position when it is a corner. `getSuccessors()` reads the same format and creates a new `frozenset` containing the next position when Pac-Man moves onto a corner. `isGoalState()` treats the state as complete when the number of visited corners equals the number of problem corners. Both components are hashable, so the complete state is hashable.
+The heuristic reads this state without modifying it. The Q5 dependency passed its supplied autograder tests with `Question q5: 3/3`.
 
-`cornersHeuristic()` must read this exact representation without modifying the state.
+## Heuristic Design
 
-Q5 validation status: Automated IDE validation was unavailable because Python 3.11 is not installed in the IDE environment. Static inspection confirmed that the Q5 state representation is consistent and that the historical `frozenset`/Boolean-list mismatch is not present. Manual PowerShell validation with `py -3.11 autograder.py -q q5` remains pending.
+The heuristic:
+
+1. Finds all remaining unvisited corners.
+2. Generates every possible order for visiting them.
+3. Calculates the Manhattan route cost for each order, starting at Pac-Man's current position.
+4. Returns the minimum route cost.
+
+There are at most four corners, so at most `4! = 24` visit orders are checked.
+
+## Why Manhattan Distance
+
+Manhattan distance ignores maze walls, so `Manhattan distance <= actual maze path distance`. This makes it a computationally inexpensive lower-bound component.
+
+## Admissibility
+
+The heuristic solves a relaxed version of the CornersProblem because it ignores walls. Every Manhattan route through the remaining corners costs no more than its corresponding real maze route. Taking the minimum relaxed route therefore cannot overestimate the true remaining cost, so the heuristic is admissible.
+
+## Consistency
+
+Consistency requires `h(n) <= c(n,n') + h(n')`. Each legal Pac-Man move costs `1`, and moving one square changes Manhattan distance by at most `1`. Because the heuristic is the optimal remaining cost in the relaxed Manhattan problem, one real move cannot reduce that relaxed cost by more than the move cost. Therefore the heuristic is consistent.
+
+## Goal State
+
+When all corners have been visited, `h(goal) = 0`.
+
+## Final Testing
+
+Command: `py -3.11 autograder.py -q q6`
+
+Dependency tests:
+
+```text
+Question q4: 3/3
+```
+
+Q6:
+
+```text
+Question q6: 3/3
+```
+
+Total shown:
+
+```text
+6/6
+```
+
+- Path length: `106`
+- Nodes expanded: `741`
+
+## Performance
+
+The assignment's full-efficiency threshold is `<= 1200` expanded nodes. The actual result was `741` expanded nodes, so the heuristic satisfies the highest Q6 node-efficiency level.
+
+## Viva Summary
+
+1. **What does the heuristic estimate?** The relaxed remaining cost to visit every unvisited corner.
+2. **Why use permutations?** The best visit order depends on Pac-Man's current position and which corners remain.
+3. **Why is checking every order practical?** There are at most four corners, so at most 24 permutations.
+4. **Why not use `mazeDistance` for every heuristic call?** Manhattan distance is much cheaper to compute and still provides an admissible lower bound.
+5. **What does admissible mean?** The heuristic never overestimates the true remaining cost.
+6. **What does consistent mean?** `h(n) <= c(n,n') + h(n')` for every transition.

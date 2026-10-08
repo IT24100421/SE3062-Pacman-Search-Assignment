@@ -385,11 +385,7 @@ def cornersHeuristic(state: Any, problem: CornersProblem):
     if not remainingCorners:
         return 0
 
-    # Manhattan distance ignores walls, so it lower-bounds the maze distance.
-    distances = [
-        util.manhattanDistance(position, corner) for corner in remainingCorners
-    ]
-
+    # Find the cheapest relaxed Manhattan route through every remaining corner.
     bestRouteCost = float("inf")
     for order in itertools.permutations(remainingCorners):
         routeCost = util.manhattanDistance(position, order[0])

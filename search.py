@@ -150,6 +150,9 @@ def uniformCostSearch(problem: SearchProblem):
     while not fringe.isEmpty():
         state, actions, cost = fringe.pop()
 
+        if cost != bestCost.get(state):
+            continue
+
         for successor, action, stepCost in problem.getSuccessors(state):
             newCost = cost + stepCost
             newActions = actions + [action]

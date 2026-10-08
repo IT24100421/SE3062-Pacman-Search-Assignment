@@ -154,7 +154,7 @@ def uniformCostSearch(problem: SearchProblem):
             newCost = cost + stepCost
             newActions = actions + [action]
 
-            if successor not in bestCost:
+            if successor not in bestCost or newCost < bestCost[successor]:
                 bestCost[successor] = newCost
                 successorNode = (successor, newActions, newCost)
                 fringe.push(successorNode, newCost)

@@ -323,8 +323,9 @@ class CornersProblem(search.SearchProblem):
 
         successors = []
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
-            # Get current position from state
-            x, y = state[0]
+            # Get current position and visited corners from state
+            currentPosition, visitedCorners = state
+            x, y = currentPosition
             dx, dy = Actions.directionToVector(action)
             nextx, nexty = int(x + dx), int(y + dy)
 
@@ -332,14 +333,13 @@ class CornersProblem(search.SearchProblem):
             if not self.walls[nextx][nexty]:
                 nextPosition = (nextx, nexty)
 
-                # Copy visited corners and mark any newly reached corner
-                visitedCorners = list(state[1])
-                for i in range(4):
-                    if nextPosition == self.corners[i]:
-                        visitedCorners[i] = True
+                # If the next position is a corner, add it to visited set
+                newVisitedCorners = visitedCorners
+                if nextPosition in self.corners:
+                    newVisitedCorners = visitedCorners | frozenset([nextPosition])
 
-                # Build successor state (tuple so it is hashable)
-                successorState = (nextPosition, tuple(visitedCorners))
+                # Build successor state (frozenset is hashable)
+                successorState = (nextPosition, newVisitedCorners)
                 successors.append((successorState, action, 1))
 
         self._expanded += 1 # DO NOT CHANGE

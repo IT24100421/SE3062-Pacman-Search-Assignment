@@ -397,7 +397,7 @@ def cornersHeuristic(state: Any, problem: CornersProblem):
             routeCost += util.manhattanDistance(order[index], order[index + 1])
         bestRouteCost = min(bestRouteCost, routeCost)
 
-    return max(distances)
+    return bestRouteCost
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"

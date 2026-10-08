@@ -389,7 +389,7 @@ def cornersHeuristic(state: Any, problem: CornersProblem):
         util.manhattanDistance(position, corner) for corner in remainingCorners
     ]
 
-    return 0 # Default to trivial solution
+    return max(distances)
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"

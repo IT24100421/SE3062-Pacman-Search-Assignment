@@ -144,15 +144,19 @@ def uniformCostSearch(problem: SearchProblem):
     startCost = 0
     startNode = (startState, startActions, startCost)
 
+    # Order frontier nodes by their accumulated path cost g(n).
     fringe.push(startNode, startCost)
+    # Store the cheapest discovered cost for each state.
     bestCost = {startState: startCost}
 
     while not fringe.isEmpty():
         state, actions, cost = fringe.pop()
 
+        # Skip stale entries when a cheaper route is already known.
         if cost != bestCost.get(state):
             continue
 
+        # Test the goal only after popping the cheapest valid node.
         if problem.isGoalState(state):
             return actions
 
@@ -160,6 +164,7 @@ def uniformCostSearch(problem: SearchProblem):
             newCost = cost + stepCost
             newActions = actions + [action]
 
+            # Relax the successor when this path is cheaper.
             if successor not in bestCost or newCost < bestCost[successor]:
                 bestCost[successor] = newCost
                 successorNode = (successor, newActions, newCost)

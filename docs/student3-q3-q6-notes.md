@@ -147,3 +147,53 @@ The assignment's full-efficiency threshold is `<= 1200` expanded nodes. The actu
 4. **Why not use `mazeDistance` for every heuristic call?** Manhattan distance is much cheaper to compute and still provides an admissible lower bound.
 5. **What does admissible mean?** The heuristic never overestimates the true remaining cost.
 6. **What does consistent mean?** `h(n) <= c(n,n') + h(n')` for every transition.
+
+# Final Student 3 Verification
+
+## Branch
+
+`member3-ucs-corners-heuristic`
+
+## Q3 Final Status
+
+- Function: `uniformCostSearch(problem)`
+- File: `search.py`
+- Validated result: `Question q3: 3/3`
+
+## Q6 Final Status
+
+- Function: `cornersHeuristic(state, problem)`
+- File: `searchAgents.py`
+- Validated result: `Question q6: 3/3`
+- Dependency result: `Question q4: 3/3`
+- Q6 path length: `106`
+- Q6 expanded nodes: `741`
+
+## Q5 Dependency Status
+
+The final Q5 state representation used by Q6 is `(position, visitedCorners)`, where `visitedCorners` is a `frozenset` of visited corner coordinates. Q5 was manually validated as passing `Question q5: 3/3`.
+
+## Git Contribution Summary
+
+Student 3:
+
+- Implemented Q3 Uniform Cost Search.
+- Added cheapest-cost tracking and stale-entry handling.
+- Validated Q3 using the supplied autograder.
+- Implemented the Q6 Corners heuristic.
+- Designed a minimum Manhattan tour over remaining-corner permutations.
+- Documented admissibility and consistency reasoning.
+- Validated Q6 performance at 741 expanded nodes.
+- Maintained work on the dedicated Student 3 branch with incremental, meaningful commits.
+
+## Report Evidence Checklist
+
+- [ ] Q3 autograder screenshot
+- [ ] Q6 autograder screenshot
+- [ ] Student 3 Git commit history screenshot
+- [ ] Student 3 branch screenshot
+- [ ] Student 3 pull request screenshot
+- [ ] Git contribution/activity screenshot
+- [ ] Q3 code screenshot
+- [ ] Q6 code screenshot
+- [ ] AI usage declaration with exact prompts

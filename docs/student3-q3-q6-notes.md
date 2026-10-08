@@ -68,4 +68,17 @@ Student 3 report evidence should include:
 
 # Student 3 — Q6 Corners Heuristic
 
-Status: Pending Q5 integration.
+## Q5 Dependency / State Contract
+
+The current `CornersProblem` implementation uses the state:
+
+`(position, visitedCorners)`
+
+- `position` is the current Pac-Man coordinate as an `(x, y)` tuple.
+- `visitedCorners` is a `frozenset` containing the corner-coordinate tuples already visited.
+
+`getStartState()` creates this format and includes the starting position when it is a corner. `getSuccessors()` reads the same format and creates a new `frozenset` containing the next position when Pac-Man moves onto a corner. `isGoalState()` treats the state as complete when the number of visited corners equals the number of problem corners. Both components are hashable, so the complete state is hashable.
+
+`cornersHeuristic()` must read this exact representation without modifying the state.
+
+Q5 validation status: Automated IDE validation was unavailable because Python 3.11 is not installed in the IDE environment. Static inspection confirmed that the Q5 state representation is consistent and that the historical `frozenset`/Boolean-list mismatch is not present. Manual PowerShell validation with `py -3.11 autograder.py -q q5` remains pending.

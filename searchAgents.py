@@ -35,6 +35,7 @@ Good luck and happy searching!
 """
 
 from typing import List, Tuple, Any
+import itertools
 from game import Directions
 from game import Agent
 from game import Actions
@@ -381,7 +382,23 @@ def cornersHeuristic(state: Any, problem: CornersProblem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
-    return 0 # Default to trivial solution
+    position, visitedCorners = state
+    remainingCorners = [
+        corner for corner in corners if corner not in visitedCorners
+    ]
+
+    if not remainingCorners:
+        return 0
+
+    # Find the cheapest relaxed Manhattan route through every remaining corner.
+    bestRouteCost = float("inf")
+    for order in itertools.permutations(remainingCorners):
+        routeCost = util.manhattanDistance(position, order[0])
+        for index in range(len(order) - 1):
+            routeCost += util.manhattanDistance(order[index], order[index + 1])
+        bestRouteCost = min(bestRouteCost, routeCost)
+
+    return bestRouteCost
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
@@ -474,8 +491,40 @@ def foodHeuristic(state: Tuple[Tuple, List[List]], problem: FoodSearchProblem):
     problem.heuristicInfo['wallCount']
     """
     position, foodGrid = state
-    "*** YOUR CODE HERE ***"
-    return 0
+    foodPositions = foodGrid.asList()
+    if not foodPositions:
+        return 0
+
+    # Collecting every dot requires at least reaching the farthest dot.
+    # Exact maze distances account for walls and are a consistent lower bound:
+    # a legal step changes each remaining dot's distance by at most one.
+    distanceMaps = problem.heuristicInfo.setdefault('foodDistanceMaps', {})
+    farthestDistance = 0
+
+    for food in foodPositions:
+        if food not in distanceMaps:
+            # Walls never change, so reuse this BFS map in later heuristic calls.
+            distances = {food: 0}
+            fringe = util.Queue()
+            fringe.push(food)
+
+            while not fringe.isEmpty():
+                x, y = fringe.pop()
+                for dx, dy in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+                    nextPosition = (x + dx, y + dy)
+                    nextx, nexty = nextPosition
+                    if (0 <= nextx < problem.walls.width
+                            and 0 <= nexty < problem.walls.height
+                            and not problem.walls[nextx][nexty]
+                            and nextPosition not in distances):
+                        distances[nextPosition] = distances[(x, y)] + 1
+                        fringe.push(nextPosition)
+
+            distanceMaps[food] = distances
+
+        farthestDistance = max(farthestDistance, distanceMaps[food][position])
+
+    return farthestDistance
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"

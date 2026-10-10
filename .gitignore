@@ -1,2 +1,9 @@
 ﻿__pycache__/
 *.pyc
+
+# Local assignment documents and work plan
+*.pdf
+*.doc
+*.docx
+MEMBER_4_PLAN.md
+tmp

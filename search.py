@@ -151,17 +151,28 @@ def uniformCostSearch(problem: SearchProblem):
     startCost = 0
     startNode = (startState, startActions, startCost)
 
+    # Order frontier nodes by their accumulated path cost g(n).
     fringe.push(startNode, startCost)
+    # Store the cheapest discovered cost for each state.
     bestCost = {startState: startCost}
 
     while not fringe.isEmpty():
         state, actions, cost = fringe.pop()
 
+        # Skip stale entries when a cheaper route is already known.
+        if cost != bestCost.get(state):
+            continue
+
+        # Test the goal only after popping the cheapest valid node.
+        if problem.isGoalState(state):
+            return actions
+
         for successor, action, stepCost in problem.getSuccessors(state):
             newCost = cost + stepCost
             newActions = actions + [action]
 
-            if successor not in bestCost:
+            # Relax the successor when this path is cheaper.
+            if successor not in bestCost or newCost < bestCost[successor]:
                 bestCost[successor] = newCost
                 successorNode = (successor, newActions, newCost)
                 fringe.push(successorNode, newCost)
@@ -177,8 +188,29 @@ def nullHeuristic(state, problem=None):
 
 def aStarSearch(problem: SearchProblem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    fringe = util.PriorityQueue()
+    startState = problem.getStartState()
+    bestCost = {startState: 0}
+    fringe.push((startState, [], 0), heuristic(startState, problem))
+
+    while not fringe.isEmpty():
+        state, actions, cost = fringe.pop()
+
+        # A cheaper route may have been queued since this entry was added.
+        if cost > bestCost[state]:
+            continue
+
+        if problem.isGoalState(state):
+            return actions
+
+        for successor, action, stepCost in problem.getSuccessors(state):
+            nextCost = cost + stepCost
+            if successor not in bestCost or nextCost < bestCost[successor]:
+                bestCost[successor] = nextCost
+                priority = nextCost + heuristic(successor, problem)
+                fringe.push((successor, actions + [action], nextCost), priority)
+
+    return []
 
 
 # Abbreviations

@@ -326,12 +326,11 @@ class CornersProblem(search.SearchProblem):
             list of triples: (successorState, action, stepCost)
         """
         successors = []
+        currentPosition, visitedCorners = state
+        x, y = currentPosition
 
         # 1. Evaluate movement in each of the four cardinal directions
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
-            # Extract current Pacman position and set of visited corners from state
-            currentPosition, visitedCorners = state
-            x, y = currentPosition
             dx, dy = Actions.directionToVector(action)
             nextx, nexty = int(x + dx), int(y + dy)
 

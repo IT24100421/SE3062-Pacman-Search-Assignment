@@ -315,31 +315,35 @@ class CornersProblem(search.SearchProblem):
         """
         Returns successor states, the actions they require, and a cost of 1.
 
-         As noted in search.py:
-            For a given state, this should return a list of triples, (successor,
-            action, stepCost), where 'successor' is a successor to the current
-            state, 'action' is the action required to get there, and 'stepCost'
-            is the incremental cost of expanding to that successor
-        """
+        State representation:
+            state = (currentPosition, visitedCorners)
+            - currentPosition: (x, y) coordinates of Pacman.
+            - visitedCorners: frozenset of corner coordinates already visited.
+              Using frozenset ensures the state is immutable and hashable for
+              graph search visited sets.
 
+        Returns:
+            list of triples: (successorState, action, stepCost)
+        """
         successors = []
+        currentPosition, visitedCorners = state
+        x, y = currentPosition
+
+        # 1. Evaluate movement in each of the four cardinal directions
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
-            # Get current position and visited corners from state
-            currentPosition, visitedCorners = state
-            x, y = currentPosition
             dx, dy = Actions.directionToVector(action)
             nextx, nexty = int(x + dx), int(y + dy)
 
-            # Only add successor if the move does not hit a wall
+            # 2. Check wall collision - only valid maze tiles can be expanded
             if not self.walls[nextx][nexty]:
                 nextPosition = (nextx, nexty)
 
-                # If the next position is a corner, add it to visited set
+                # 3. Update visited corners: if next position is a corner, add it to the frozenset
                 newVisitedCorners = visitedCorners
                 if nextPosition in self.corners:
                     newVisitedCorners = visitedCorners | frozenset([nextPosition])
 
-                # Build successor state (frozenset is hashable)
+                # 4. Form successor state tuple and append triple (state, action, cost=1)
                 successorState = (nextPosition, newVisitedCorners)
                 successors.append((successorState, action, 1))
 

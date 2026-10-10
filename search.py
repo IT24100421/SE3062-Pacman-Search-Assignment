@@ -108,31 +108,38 @@ def depthFirstSearch(problem: SearchProblem):
     return []
 
 def breadthFirstSearch(problem: SearchProblem):
-    """Search the shallowest nodes in the search tree first."""
-    # Use a Queue (FIFO) so shallowest nodes are explored first
+    """
+    Search the shallowest nodes in the search tree first.
+    BFS explores the state space level-by-level using a FIFO (First-In, First-Out) queue.
+    This guarantees finding the shortest path when all step costs are equal (cost = 1).
+    """
+    # 1. Initialize the FIFO Queue frontier and visited set for graph search
     fringe = util.Queue()
     visited = set()
 
+    # 2. Push the starting state and an empty list of actions onto the queue
     startState = problem.getStartState()
     fringe.push((startState, []))
 
+    # 3. Process states until the queue is empty
     while not fringe.isEmpty():
+        # Pop the shallowest unvisited state (FIFO ordering)
         state, actions = fringe.pop()
 
-        # Check goal when we pop (not when we push)
+        # Goal check: verify if the current state reaches the goal
         if problem.isGoalState(state):
             return actions
 
-        # Graph search: skip already visited states
+        # Graph search: only expand states that haven't been visited yet
         if state not in visited:
             visited.add(state)
 
-            # Expand the current state
+            # 4. Explore all legal successors and enqueue them with accumulated actions
             for successor, action, stepCost in problem.getSuccessors(state):
                 if successor not in visited:
                     fringe.push((successor, actions + [action]))
 
-    # No solution found
+    # Return an empty path if no solution was found
     return []
 
 def uniformCostSearch(problem: SearchProblem):
